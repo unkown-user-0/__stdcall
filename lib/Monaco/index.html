@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<style type="text/css">
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+	</style>
+	<meta charset="utf-8" />
+	<title></title>
+</head>
+
+<body>
+	<div id="container" style="width:100%;height:100%;"></div>
+	<script src="vs/loader.js"></script>
+	<script type="text/javascript">
+		require.config({
+			paths: {
+				'vs': 'vs/'
+			}
+		});
+
+		var editor;
+		var Proposals = [];
+
+		var SetText;
+		var ShowMinimap;
+		var HideMinimap;
+		var EnableAutoComplete;
+		var DisableAutoComplete;
+		var GetText;
+		var AddIntellisense;
+		var Refresh;
+	
+
+
+		require(['vs/editor/editor.main'], function () {
+			function getDependencyProposals() {
+				return Proposals;
+			}
+
+			monaco.languages.registerCompletionItemProvider('lua', {
+				provideCompletionItems: function (model, position) {
+					return getDependencyProposals();
+				},
+
+			});
+
+
+			monaco.editor.defineTheme('net-theme-dark', {
+				base: 'vs-dark',
+				inherit: true,
+				colors: {
+					"editor.background": '#000000',
+				},
+				rules: [{
+						token: 'global',
+						foreground: '6699cc', // //FFFFFF
+						fontStyle: "bold"
+					},
+					{
+						token: 'keyword',
+						foreground: 'cc99cc',
+						fontStyle: "bold"
+					},
+					{
+						token: 'comment',
+						foreground: '999999'
+					},
+					{
+						token: 'number',
+						foreground: 'f99157'
+					},
+					{
+						token: 'string',
+						foreground: '99CC99'
+					},
+					{
+						token: 'Method',
+						foreground: 'ffa1dc'
+					},
+				]
+			});
+
+			editor = monaco.editor.create(document.getElementById('container'), {
+				language: 'lua',
+				theme: "net-theme-dark",
+				acceptSuggestionOnEnter: "smart",
+				suggestOnTriggerCharacters: true,
+				suggestSelection: "recentlyUsed",
+				folding: true,
+				wordBasedSuggestions : true,
+				scrollbar: {
+					verticalHasArrows: true,
+				},
+				dragAndDrop: true,
+				links: true,
+				minimap: {
+					enabled: false,
+				},
+				showFoldingControls: "always",
+				smoothScrolling: true,
+			});
+
+			EnableAutoComplete = function(){
+				editor.updateOptions({
+					suggestOnTriggerCharacters: true,
+					acceptSuggestionOnEnter : "smart",
+					wordBasedSuggestions : true
+				});
+			}
+
+			DisableAutoComplete = function(){
+				editor.updateOptions({
+					suggestOnTriggerCharacters: false,
+					acceptSuggestionOnEnter : "off",
+					wordBasedSuggestions : false
+				});
+			}
+
+			window.onresize = function () {
+				editor.layout();
+			};
+
+			ShowMinimap = function () {
+				editor.updateOptions({
+					minimap: {
+						enabled: true,
+					}
+				});
+			}
+
+			HideMinimap = function () {
+				editor.updateOptions({
+					minimap: {
+						enabled: false,
+					}
+				});
+			}
+
+
+
+			editor.onDidChangeModelContent(function (e) {
+				//window.chrome.webview.postMessage(editor.getValue())
+			});
+
+			GetText = function () {
+				return editor.getValue();
+			}
+
+			SetText = function (x) {
+				editor.setValue(x);
+			}
+
+			AddIntellisense = function (l, k, d, i) {
+				var t;
+				switch (k) {
+					case "Class":
+						t = monaco.languages.CompletionItemKind.Class;
+						break;
+					case "Color":
+						t = monaco.languages.CompletionItemKind.Color;
+						break;
+					case "Constructor":
+						t = monaco.languages.CompletionItemKind.Constructor;
+						break;
+					case "Enum":
+						t = monaco.languages.CompletionItemKind.Enum;
+						break;
+					case "Field":
+						t = monaco.languages.CompletionItemKind.Field;
+						break;
+					case "File":
+						t = monaco.languages.CompletionItemKind.File;
+						break;
+					case "Folder":
+						t = monaco.languages.CompletionItemKind.Folder;
+						break;
+					case "Function":
+						t = monaco.languages.CompletionItemKind.Function;
+						break;
+					case "Interface":
+						t = monaco.languages.CompletionItemKind.Interface;
+						break;
+					case "Keyword":
+						t = monaco.languages.CompletionItemKind.Keyword;
+						break;
+					case "Method":
+						t = monaco.languages.CompletionItemKind.Method;
+						break;
+					case "Module":
+						t = monaco.languages.CompletionItemKind.Module;
+						break;
+					case "Property":
+						t = monaco.languages.CompletionItemKind.Property;
+						break;
+					case "Reference":
+						t = monaco.languages.CompletionItemKind.Reference;
+						break;
+					case "Snippet":
+						t = monaco.languages.CompletionItemKind.Snippet;
+						break;
+					case "Text":
+						t = monaco.languages.CompletionItemKind.Text;
+						break;
+					case "Unit":
+						t = monaco.languages.CompletionItemKind.Unit;
+						break;
+					case "Value":
+						t = monaco.languages.CompletionItemKind.Value;
+						break;
+					case "Variable":
+						t = monaco.languages.CompletionItemKind.Variable;
+						break;
+				}
+
+				Proposals.push({
+					label: l,
+					kind: t,
+					detail: d,
+					insertText: i
+				});
+			}
+
+			AddFunction = function(l, args, ret, d)
+			{
+				AddIntellisense(l + "(" + args + "): " + ret, "Function", d, l + "()")
+			}
+
+			AddKeyword = function(k, i, d)
+			{
+				AddIntellisense(k, "Keyword", d, i)
+			}
+
+
+			AddFunction("tostring", "value: any", "string", "returns value as a string")
+			AddFunction("makefolder", "path: string", "none", "creates a folder at the specified path")
+			AddFunction("clonefunction", "func: closure", "closure", "returns clone of the specified function")
+			AddFunction("setrawmetatable", "object: any, metatable: table|nil", "table", "sets the metatable of the object")
+			AddFunction("isscriptable", "inst: Instance, property: string", "bool", "returns is the property is scriptable")
+			AddFunction("pairs", "table: table", "any", "loop through the specified table")
+			AddFunction("hookmetamethod", "object: any, method: string, hook: closure", "hooks the metamethod of object metatable")
+			AddFunction("assert", "condition: any, message: string?", "any", "checks the condition")
+			AddFunction("getexecutorname", "", "string, string", "returns executor name, version")
+			AddFunction("tonumber", "value: any", "number", "returns value as a number")
+			AddFunction("getrawmetatable", "object: any", "table|nil", "returns the object metatable")
+			AddFunction("isgameactive", "", "bool", "returns is the roblox window active")
+			AddFunction("http_get", "url: string", "string", "performs a http get request")
+			AddFunction("Stats", "", "Stats", "returns Stats service")
+			AddFunction("setthreadcontext", "identity: number", "none", "sets the current thread identity")
+			AddFunction("getrenv", "", "table", "returns roblox environment")
+			AddFunction("toclipboard", "content: string", "none", "copies specified content to user clipboard")
+			AddFunction("newcclosure", "func: closure", "closure", "converts specified function into a cclosure")
+			AddFunction("request", "data: table", "table", "performs a http request")
+			AddFunction("isfunctionhooked", "func: closure", "bool", "returns is the closure hooked")
+			AddFunction("cloneref", "inst: Instance", "Instance", "clones the reference of the specified instance")
+			AddFunction("setscriptable", "inst: Instance, property: string, scriptable: bool?", "bool", "sets is the property scriptable")
+			AddFunction("loadstring", "source: string, chunkname: string?", "function|nil, string|nil?", "loads the specified code, if fails returns nil and error")
+			AddFunction("Version", "", "string", "returns running roblox version")
+			AddFunction("isexecutorclosure", "func: closure", "bool", "returns is the function made by executor")
+			AddFunction("spawn", "func: closure", "thread", "spawns the specified function in a new thread")
+			AddFunction("hookfunction", "func: closure, hook: closure", "closure", "hooks specified closure with the hook")
+			AddFunction("isfile", "path: string", "bool", "returns if the specified path is a file")
+			AddFunction("mouse2release", "", "none", "releases right mouse button")
+			AddFunction("print", "...: any", "none", "prints the arguments")
+			AddFunction("getupvalue", "func: closure, index: number", "any", "returns the upvalue by index")
+			AddFunction("keypress", "key: number", "none", "presses the specified key")
+			AddFunction("elapsedTime", "", "number", "returns number of seconds since roblox started")
+			AddFunction("setidentity", "identity: number", "none", "sets the current thread identity")
+			AddFunction("ipairs", "table: table", "any", "loop through the specified table only with number indexes")
+			AddFunction("httpget", "url: string", "string", "performs a http get request")
+			AddFunction("mouse1click", "", "none", "clicks left mouse button")
+			AddFunction("collectgarbage", "action: string", "any", "does the specified action with the gc")
+			AddFunction("gethiddenproperty", "inst: Instance, property: string", "any, bool", "returns the property value")
+			AddFunction("setrbxclipboard", "content: string", "none", "copies specified content to user clipboard")
+			AddFunction("lz4_decompress", "compressed: string", "string", "decompresses the lz4 compressed string")
+			AddFunction("lz4_compress", "data: string", "string", "compresses the specified string")
+			AddFunction("setclosurecaps", "func: closure, capability: number", "none", "sets the closure capabilities")
+			AddFunction("isourclosure", "func: closure", "bool", "returns is the function made by executor")
+			AddFunction("checkclosure", "func: closure", "bool", "returns is the function made by executor")
+			AddFunction("http_post", "url: string, content: string", "string", "performs a http post request")
+			AddFunction("time", "", "number", "returns number of seconds since roblox started")
+			AddFunction("restorefunction", "func: closure", "none", "restores the closure if it was hooked")
+			AddFunction("http_request", "data: table", "table", "performs a http request")
+			AddFunction("pcall", "func: closure, ...:any", "bool, string|...", "calls the function in protected mode, returns success and return values")
+			AddFunction("getupvalues", "func: closure", "table", "returns upvalues of the specified function")
+			AddFunction("httprequest", "data: table", "table", "performs a http request")
+			AddFunction("type", "value: any", "string", "returns the type of value")
+			AddFunction("setupvalue", "func: closure, index: number, value: any", "none", "sets the upvalue at index")
+			AddFunction("ElapsedTime", "", "number", "returns number of seconds since roblox started")
+			AddFunction("setconstant", "func: closure, index: number, value: any", "none", "sets the constant at index")
+			AddFunction("setthreadidentity", "identity: number", "none", "sets the current thread identity")
+			AddFunction("setclipboard", "content: string", "none", "copies specified content to user clipboard")
+			AddFunction("isreadonly", "table: table", "bool", "returns is the table readonly")
+			AddFunction("mouse2click", "", "none", "clicks right mouse button")
+			AddFunction("getcallingscript", "", "Script|nil", "returns the calling script")
+			AddFunction("sethiddenproperty", "inst: Instance, property: string, value: any", "none", "sets the property to specified value")
+			AddFunction("isrbxactive", "", "bool", "returns is the roblox window active")
+			AddFunction("getconstant", "func: closure", "any", "returns the constant by index")
+			AddFunction("getthreadcontext", "", "number", "returns the current identity")
+			AddFunction("warn", "...: any", "none", "warns the arguments")
+			AddFunction("getthreadidentity", "", "number", "returns the current identity")
+			AddFunction("gcinfo", "", "number", "returns the gc size in kb")
+			AddFunction("setreadonly", "table: table, readonly: bool", "none", "sets is the table is readonly")
+			AddFunction("getscriptclosure", "script: LocalScript|ModuleScript", "closure", "returns the script closure")
+			AddFunction("tick", "", "number", "returns the current time in seconds")
+			AddFunction("newproxy", "metatable: bool?", "userdata", "returns a new userdata")
+			AddFunction("checkcaller", "", "bool", "checks if the caller is the executor")
+			AddFunction("getfenv", "func: number|closure", "table", "returns the environment of the function")
+			AddFunction("isrenderobj", "object: drawing?", "bool", "returns is the object is a drawing")
+			AddFunction("lz4decompress", "compressed: string", "string", "decompresses the lz4 compressed string")
+			AddFunction("iscclosure", "func: closure", "bool", "returns if the func is cclosure")
+			AddFunction("rawlen", "object: any", "number", "returns the lenght of the object")
+			AddFunction("wait", "time: number?", "number, number", "waits for the specified time")
+			AddFunction("base64_encode", "data: string", "string", "encodes the data with base64")
+			AddFunction("setrenderproperty", "object: drawing, property: string, value: any", "none", "sets the render property of drawing object")
+			AddFunction("mouse2press", "", "none", "presses right mouse button")
+			AddFunction("httppost", "url: string, content: string", "string", "performs a http post request")
+			AddFunction("Delay", "time: number, func: closure", "thread", "waits and then spawns the function in a new thread")
+			AddFunction("getnamecallmethod", "", "string", "returns the namecall method")
+			AddFunction("getconstants", "func: closure", "table", "returns constants of the specified function")
+			AddFunction("getidentity", "", "number", "returns the current identity")
+			AddFunction("getgc", "tables: bool?", "table", "returns the gc items")
+			AddFunction("getthreadscript", "thread: thread", "Script|nil", "returns the thread script")
+			AddFunction("listfiles", "path: string", "table", "returns all files in the specified path")
+			AddFunction("compareinstances", "inst1: Instance, inst2: Instance", "bool", "returns if the instances match")
+			AddFunction("UserSettings", "", "UserSettings", "returns the user settings")
+			AddFunction("delfile", "path: string", "none", "deletes the file at the specified path")
+			AddFunction("isfolder", "path: string", "bool", "returns if the specified path is a folder")
+			AddFunction("getrenderproperty", "object: drawing, property: string", "any", "returns the property of drawing object")
+			AddFunction("mouse1release", "", "none", "releases left mouse button")
+			AddFunction("writefile", "path: string, content: string", "none", "writes the content to the specified path")
+			AddFunction("readfile", "path: string", "string", "reads the content to the specified path")
+			AddFunction("cleardrawcache", "", "none", "clears the draw cache")
+			AddFunction("replaceclosure", "func: closure, hook: closure", "closure", "hooks specified closure with the hook")
+			AddFunction("delay", "time: number, func: closure", "thread", "waits and then spawns the function in a new thread")
+			AddFunction("mousescroll", "amount: number", "none", "scrolls the mouse for the specified amount")
+			AddFunction("ypcall", "func: closure, ...:any", "bool, string|...", "calls the function in protected mode, returns success and return values")
+			AddFunction("delfolder", "path: string", "none", "deletes the folder at the specified path")
+			AddFunction("getgenv", "", "table", "returns the global environment")
+			AddFunction("keyrelease", "key: number", "none", "releases the specified key")
+			AddFunction("mousemoveabs", "x: number, y: number", "none", "moves the mouse to absolute position")
+			AddFunction("getscripthash", "script: Script", "string", "returns the script hash")
+			AddFunction("typeof", "value: any", "string", "returns the roblox-style type of value")
+			AddFunction("getcallstack", "thread: thread?", "table", "returns the callstack of the thread")
+			AddFunction("mouse1press", "", "none", "presses left mouse button")
+			AddFunction("require", "script: ModuleScript", "any", "requires the modulescript")
+			AddFunction("unpack", "table: table", "...", "unpacks the table values")
+			AddFunction("base64_decode", "base64_data: string", "string", "decodes the base64 string")
+			AddFunction("setmetatable", "object: any, metatable: table|nil", "table", "sets the object metatable")
+			AddFunction("next", "table: table", "any", "goes to the next table index")
+			AddFunction("mousemoverel", "x: number, y: number", "none", "moves the mouse to relative position of the mouse")
+			AddFunction("identifyexecutor", "", "string, string", "returns executor name, version")
+			AddFunction("settings", "", "GlobalSettings", "returns the global settings")
+			AddFunction("getscriptfunction", "script: LocalScript|ModuleScript", "closure", "returns the script closure")
+			AddFunction("islclosure", "func: closure", "bool", "returns if the func is lclosure")
+			AddFunction("getcaps", "", "number", "returns the current thread capabilities")
+			AddFunction("rawequal", "object1: any, object2: any", "bool", "returns are the objects equal")
+			AddFunction("setcaps", "capabilities: number", "none", "sets the current thread capabilities")
+			AddFunction("getmetatable", "object: any", "table|nil", "gets the object metatable")
+			AddFunction("Spawn", "func: closure", "thread", "spawns the specified function in a new thread")
+			AddFunction("stats", "", "Stats", "returns Stats service")
+			AddFunction("lz4compress", "data: string", "string", "compresses the specified string")
+			AddFunction("appendfile", "path: string, content: string", "none", "appends the content to the specified path")
+			AddFunction("getscriptbytecode", "script: LocalScript|ModuleScript", "string", "returns the script bytecode")
+			AddFunction("getreg", "", "table", "returns the registry table")
+			AddFunction("getclosurecaps", "func: closure", "number", "returns the closure capabilities")
+			AddFunction("printidentity", "message: string?", "none", "prints the current identity")
+			AddFunction("version", "", "string", "returns running roblox version")
+			AddFunction("xpcall", "func: closure, onerror: closure, ...:any", "bool, string|...", "calls the function in protected mode, on error calls onerror, returns success and return values")
+			AddFunction("rawget", "object: any, index: any", "any", "gets the value of object at index")
+			AddFunction("Wait", "time: number?", "number, number", "waits for the specified time")
+			AddFunction("setfenv", "func: number|closure, value: any", "none", "sets the closure environment")
+			AddFunction("iswindowactive", "", "bool", "returns is the roblox window active")
+			AddFunction("rawset", "object: any, index: any, value: any", "none", "sets the value of object at index")
+			AddFunction("error", "message: string, level: number?", "none", "erros the message with specified level")
+			AddFunction("select", "arg: number|string, ...:any", "any", "selects the value at index")
+			AddFunction("unreliablehook", "func: closure, hook: closure", "closure", "hooks specified closure with the hook")
+			AddFunction("consolecreate", "", "none", "does nothing")
+			AddFunction("queue_on_teleport", "script: string", "none", "schedules code to run after teleport")
+			AddFunction("unprotect_gui", "gui: ScreenGui", "none", "unprotects gui protected by protect_gui")
+			AddFunction("Drawing_new", "type: string", "SynapseDrawing", "creates a drawing of type")
+			AddFunction("rconsoletitle", "title: string", "none", "sets internal console title")
+			AddFunction("getproto", "func: number|closure, index: number, from_gc: bool?", "proto", "gets sub proto of a proto at index")
+			AddFunction("cache_replace", "old: Instance, new: Instance", "none", "replaces Instance in roblox instance cache")
+			AddFunction("debug_getupvalue", "func: closure, index: number", "any", "returns the upvalue by index")
+			AddFunction("getstack", "stack: number, index: number?", "any", "returns stack at index")
+			AddFunction("cache_invalidate", "obj: Instance", "none", "replaces Instance in roblox instance cache with nil")
+			AddFunction("makereadonly", "table: table", "none", "sets table readonly to true")
+			AddFunction("topointer", "arg: any", "string", "returns address of the arg")
+			AddFunction("getnilinstances", "", "table", "returns all instances parented to nil")
+			AddFunction("syn_secure_protect", "script: string", "string", "protects the script to be runned with syn_secure_run")
+			AddFunction("gettenv", "th: thread", "table", "returns thread environment")
+			AddFunction("protect_gui", "gui: ScreenGui", "none", "protects gui")
+			AddFunction("readfileasync", "path: string", "string", "reads the content to the specified path")
+			AddFunction("issynapsefunction", "func: closure", "bool", "returns is the function made by executor")
+			AddFunction("consoleerror", "err: string", "none", "outputs a error in console")
+			AddFunction("getinstances", "", "table", "returns all instances")
+			AddFunction("is_our_closure", "func: closure", "bool", "returns is the function made by executor")
+			AddFunction("getobjects", "asset: Content", "table", "returns objects from the Content")
+			AddFunction("consoleprint", "msg: string", "none", "outputs text in console")
+			AddFunction("setuntouched", "table: table, untouched: bool", "none", "sets table safeenv field")
+			AddFunction("debug_getstack", "stack: number, index: number?", "any", "returns stack at index")
+			AddFunction("debug_getconstants", "func: closure", "table", "returns constants of the specified function")
+			AddFunction("cache_iscached", "obj: Instance", "bool", "returns true if object is in roblox instance cache")
+			AddFunction("fireproximityprompt", "prompt: ProximityPrompt", "none", "fires the proximity prompt")
+			AddFunction("ImGui_new", "options: table", "SynapseImGuiWindow", "creates an imgui window")
+			AddFunction("debug_setupvalue", "func: closure, index: number, value: any", "none", "sets the upvalue at index")
+			AddFunction("isuntouched", "table: table", "bool", "returns table safeenv field")
+			AddFunction("syn_secure_run", "script: string", "none", "runs code protected by syn_secure_protect")
+			AddFunction("Websocket_connect", "url: string", "SynapseWebsocket", "opens a websocket to specified url")
+			AddFunction("fireclickdetector", "detector: ClickDetector, event: string", "none", "fires the click detector")
+			AddFunction("rconsolecreate", "", "none", "does nothing")
+			AddFunction("getcallbackvalue", "inst: Instance, property: string", "function", "returns callback function")
+			AddFunction("firesignal", "signal: RBXScriptSignal", "none", "fires the signal")
+			AddFunction("cfiresignal", "signal: RBXScriptSignal", "none", "fires the signal from c++")
+			AddFunction("restoresignal", "signal: RBXScriptSignal", "none", "restores signal hooked with hooksignal")
+			AddFunction("rconsoleerror", "err: string", "none", "outputs a error in console")
+			AddFunction("issignalhooked", "signal: RBXScriptSignal", "bool", "returns true if signal is hooked")
+			AddFunction("gethiddenproperties", "inst: Instance", "table", "returns all hidden properties")
+			AddFunction("output", "type: number, text: string", "none", "outputs text in roblox console with type")
+			AddFunction("getprotos", "func: number|closure", "table", "returns sub protos of function")
+			AddFunction("debug_setconstant", "func: closure, index: number, value: any", "none", "sets the constant at index")
+			AddFunction("getrunningscripts", "", "table", "returns all running scripts")
+			AddFunction("consolesettitle", "title: string", "none", "sets internal console title")
+			AddFunction("getscripts", "", "table", "returns all scripts")
+			AddFunction("dumpstring", "script: LocalScript|ModuleScript", "string", "returns the script bytecode")
+			AddFunction("getproperties", "inst: Instance", "table", "returns all properties")
+			AddFunction("rconsoleclear", "", "none", "clears internal console")
+			AddFunction("makewriteable", "table: table", "none", "sets table readonly to false")
+			AddFunction("set_thread_identity", "identity: number", "none", "sets the current thread identity")
+			AddFunction("getinfo", "func: number|closure, what: string?", "table", "returns info of specified function")
+			AddFunction("consolewarn", "msg: string", "none", "outputs a warn in console")
+			AddFunction("debug_getinfo", "func: number|closure, what: string?", "table", "returns info of specified function")
+			AddFunction("loadfile", "path: string", "closure", "loads file content")
+			AddFunction("queueonteleport", "script: string", "none", "schedules code to run after teleport")
+			AddFunction("gethui", "", "BaseGui", "returns a hidden ui")
+			AddFunction("consoledestroy", "", "none", "does nothing")
+			AddFunction("getconnections", "signal: RBXScriptSignal", "table", "returns table of connections")
+			AddFunction("rconsoledestroy", "", "none", "does nothing")
+			AddFunction("rconsolename", "title: string", "none", "sets internal console title")
+			AddFunction("getcallback", "inst: Instance, property: string", "SynapseCallback", "returns callback")
+			AddFunction("rconsolesettitle", "title: string", "none", "sets internal console title")
+			AddFunction("clearconsole", "", "none", "clears internal console")
+			AddFunction("consoleclear", "", "none", "clears internal console")
+			AddFunction("consoleerr", "err: string", "none", "outputs a error in console")
+			AddFunction("rconsoleerr", "err: string", "none", "outputs a error in console")
+			AddFunction("printconsole", "msg: string", "none", "outputs text in console")
+			AddFunction("debug_setstack", "stack: number, index: number, value: any", "none", "sets the stack value at index")
+			AddFunction("getthreadinstance", "thread: thread", "Script|nil", "returns the thread script")
+			AddFunction("setstack", "stack: number, index: number, value: any", "none", "sets the stack value at index")
+			AddFunction("rconsoleprint", "msg: string", "none", "outputs text in console")
+			AddFunction("debug_getproto", "func: number|closure", "table", "returns sub protos of function")
+			AddFunction("get_thread_identity", "", "number", "returns the current identity")
+			AddFunction("getsynasset", "path: string", "Content", "convers workspace file to a rbx asset")
+			AddFunction("setnamecallmethod", "namecall: string", "none", "sets current namecall")
+			AddFunction("hooksignal", "signal: RBXScriptSignal, hook: closure", "none", "hooks the signal")
+			AddFunction("torbxuserdata", "arg: userdata", "string", "returns address of the roblox userdata")
+			AddFunction("getsenv", "script: LocalScript", "table", "returns script environment")
+			AddFunction("getcustomasset", "path: string", "Content", "convers workspace file to a rbx asset")
+			AddFunction("debug_getprotos", "func: number|closure", "table", "returns sub protos of function")
+			AddFunction("getloadedmodules", "", "table", "returns all loaded modules")
+			AddFunction("consoleinput", "", "string", "returns console input")
+			AddFunction("gethwid", "", "string", "returns user hwid")
+			AddFunction("isprotohooked", "proto: proto", "bool", "returns true if proto is hooked")
+			AddFunction("rconsolewarn", "msg: string", "none", "outputs a warn in console")
+			AddFunction("restoreproto", "proto: proto", "none", "restores proto hooked with hookproto")
+			AddFunction("hookproto", "proto: proto, hook: closure", "closure", "hooks the proto")
+			AddFunction("run_on_actor", "actor: Actor, script: string", "none", "runs code on specified actor")
+			AddFunction("debug_getconstant", "func: closure", "any", "returns the constant by index")
+			AddFunction("firetouchinterest", "totouch: BasePart, toucher: BasePart, touched: bool", "none", "touches totouch with toucher")
+			AddFunction("getfpscap", "", "number", "returns current fps cap")
+			AddFunction("setfpscap", "fps: number", "none", "sets current fps cap",)
+			AddFunction("debug_getupvalues", "func: closure", "table", "returns upvalues of the specified function")
+			AddFunction("rconsoleinput", "", "string", "returns console input")
+			AddFunction("dofile", "path: string, ...: any?", "any", "executes the code in specified file")
+
+			AddKeyword("if", "if", "check a condition")
+			AddKeyword("then", "then\n\nend", "if condition is met")
+			AddKeyword("do", "do\n\nend", "execute code in a new scope")
+			AddKeyword("end", "end", "end the scope")
+			AddKeyword("and", "and", "and statement")
+			AddKeyword("or", "or", "or statement")
+			AddKeyword("else", "else", "if condition is not met")
+			AddKeyword("elseif", "elseif", "check another condition")
+			AddKeyword("false", "false", "false bool")
+			AddKeyword("true", "true", "true bool")
+			AddKeyword("for", "for", "loop through specified contents")
+			AddKeyword("function", "function", "make a function")
+			AddKeyword("continue", "continue", "jump to the next value in a loop")
+			AddKeyword("in", "in", "loop in")
+			AddKeyword("local", "local ", "define a local variable")
+			AddKeyword("nil", "nil", "nil value")
+			AddKeyword("repeat", "repeat\n\nuntil", "repeat the code until a condition is met")
+			AddKeyword("return", "return ", "stop the current function and return value")
+			AddKeyword("while", "while", "while condition is met repeat the code")
+
+			
+		});
+	</script>
+</body>
+
+</html>
